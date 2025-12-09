@@ -1,0 +1,45 @@
+from nba_api.stats.endpoints import leaguedashteamstats
+from nba_api.stats.static import teams
+import pandas as pd
+
+season = '2024-25'
+
+# 1. Busca Estatísticas BÁSICAS (Sem parâmetro, traz o padrão 'Base')
+base_team = leaguedashteamstats.LeagueDashTeamStats(season=season)
+df_base = base_team.get_data_frames()[0]
+
+# 2. Busca Estatísticas AVANÇADAS (Para pegar o DEF_RATING)
+# CORREÇÃO: O parâmetro correto é 'measure_type_detailed_defense'
+adv_team = leaguedashteamstats.LeagueDashTeamStats(
+    season=season,
+    measure_type_detailed_defense='Advanced' 
+)
+df_adv = adv_team.get_data_frames()[0]
+
+# Seleciona apenas as colunas de Rating
+df_adv = df_adv[['TEAM_ID', 'DEF_RATING', 'OFF_RATING']]
+
+# 3. Junta as duas tabelas (Merge)
+df_stats_time = pd.merge(df_base, df_adv, on='TEAM_ID', how='inner')
+
+# 4. Adiciona informações extras (Siglas, IDs)
+nba_teams = teams.get_teams()
+df_teams_info = pd.DataFrame(nba_teams)
+
+# Merge final para ter a sigla do time (TEAM_ABBREVIATION)
+df_stats_time = df_stats_time.merge(df_teams_info[['id', 'abbreviation']], left_on='TEAM_ID', right_on='id', how='inner')
+df_stats_time = df_stats_time.rename(columns={'abbreviation': 'TEAM_ABBREVIATION'})
+
+# Adiciona Conferência (Mapeamento manual)
+conferencias = {
+    'ATL': 'Leste', 'BOS': 'Leste', 'BKN': 'Leste', 'BRK': 'Leste', 'CHA': 'Leste', 'CHI': 'Leste', 'CLE': 'Leste',
+    'DET': 'Leste', 'IND': 'Leste', 'MIA': 'Leste', 'MIL': 'Leste', 'NYK': 'Leste', 'ORL': 'Leste', 'PHI': 'Leste',
+    'TOR': 'Leste', 'WAS': 'Leste',
+    'DAL': 'Oeste', 'DEN': 'Oeste', 'GSW': 'Oeste', 'GS': 'Oeste', 'HOU': 'Oeste', 'LAC': 'Oeste', 'LAL': 'Oeste',
+    'MEM': 'Oeste', 'MIN': 'Oeste', 'NOP': 'Oeste', 'OKC': 'Oeste', 'PHX': 'Oeste', 'POR': 'Oeste', 'SAC': 'Oeste',
+    'SAS': 'Oeste', 'SA': 'Oeste', 'UTA': 'Oeste'
+}
+df_stats_time['CONFERENCIA'] = df_stats_time['TEAM_ABBREVIATION'].map(conferencias)
+
+# Retorna a tabela completa
+df_stats_time
