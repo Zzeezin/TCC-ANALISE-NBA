@@ -1,0 +1,61 @@
+from nba_api.stats.endpoints import leaguedashplayerstats
+import pandas as pd
+
+season = '2024-25'
+
+# --- ETAPA 1: Buscar Estatísticas BÁSICAS (O padrão) ---
+# Não precisa passar parâmetro extra, ele já traz o 'Base' por padrão
+base_stats = leaguedashplayerstats.LeagueDashPlayerStats(
+    season=season
+)
+df_base = base_stats.get_data_frames()[0]
+
+# --- ETAPA 2: Buscar Estatísticas AVANÇADAS ---
+# Aqui usamos o nome correto do parâmetro
+adv_stats = leaguedashplayerstats.LeagueDashPlayerStats(
+    season=season,
+    measure_type_detailed_defense='Advanced'
+)
+df_adv = adv_stats.get_data_frames()[0]
+
+# Selecionar apenas o que importa do Avançado
+# Nota: DEF_RATING as vezes vem com nome diferente dependendo da versão, 
+# mas vamos tentar garantir as colunas principais
+df_adv = df_adv[['PLAYER_ID', 'DEF_RATING', 'OFF_RATING', 'PIE']]
+
+# --- ETAPA 3: Juntar as duas tabelas ---
+df_stats_jogador = pd.merge(df_base, df_adv, on='PLAYER_ID', how='inner')
+
+# --- ETAPA 4: Filtros e Limpeza ---
+df_stats_jogador = df_stats_jogador[(df_stats_jogador['GP'] > 0) & (df_stats_jogador['MIN'] > 0)]
+df_stats_jogador = df_stats_jogador.dropna(subset=['TEAM_ABBREVIATION'])
+
+# --- ETAPA 5: Selecionar Colunas Finais ---
+df_stats_jogador = df_stats_jogador[[
+    'PLAYER_ID',
+    'PLAYER_NAME', 
+    'TEAM_ABBREVIATION', 
+    'AGE', 
+    'GP', 
+    'MIN', 
+    'FGM', 
+    'FGA', 
+    'FG_PCT', 
+    'FG3M', 
+    'FG3A', 
+    'FG3_PCT', 
+    'FTM', 
+    'FTA', 
+    'FT_PCT', 
+    'REB', 
+    'AST', 
+    'PF', 
+    'PTS',
+    'STL', 
+    'BLK',
+    'DEF_RATING', 
+    'OFF_RATING',
+    'PIE'
+]]
+
+df_stats_jogador
