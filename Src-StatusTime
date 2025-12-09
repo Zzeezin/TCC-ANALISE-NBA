@@ -1,0 +1,13 @@
+from nba_api.stats.static import teams
+import pandas as pd
+
+# 1. Busca a lista estática de times (Info Cadastral)
+# Não precisa de temporada, pois isso é fixo da liga
+nba_teams = teams.get_teams()
+
+# 2. Transforma em Tabela (DataFrame)
+df_info = pd.DataFrame(nba_teams)
+
+# 3. Retorna para o Power BI
+# Colunas que virão: id, full_name, abbreviation, nickname, city, state, year_founded
+df_info
